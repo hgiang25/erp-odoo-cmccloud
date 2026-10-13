@@ -5,6 +5,15 @@
 [![Help](https://img.shields.io/badge/master-help-875A7B.svg?style=flat&colorA=8F8F8F)](https://www.odoo.com/forum/help-1)
 [![Nightly Builds](https://img.shields.io/badge/master-nightly-875A7B.svg?style=flat&colorA=8F8F8F)](https://nightly.odoo.com/)
 
+## CMC delivery model
+
+This repository owns Odoo source, addons, container build definitions and CI only.
+`.github/workflows/release-images.yml` validates pull requests, builds images from
+this checkout, publishes immutable `sha-<commit>` tags, then commits those versions
+to [`hgiang25/odoo-cmc-gitops`](https://github.com/hgiang25/odoo-cmc-gitops).
+Kubernetes desired state and Argo CD bootstrap files intentionally live in that
+separate GitOps repository; this application repository does not deploy workloads.
+
 Odoo is a suite of web based open source business apps.
 
 The main Odoo Apps include an [Open Source CRM](https://www.odoo.com/page/crm),

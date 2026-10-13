@@ -38,4 +38,4 @@
    - KEDA sẽ co giãn Worker Pods dựa trên độ dài hàng đợi thực tế trong PostgreSQL bằng truy vấn:
      `SELECT count(*) FROM queue_job WHERE state IN ('pending', 'enqueued', 'started')`.
 
-Thông số đã kiểm chứng 2026-10-13: Web 2–10 pods; queue worker 1–8 pods; dispatcher root:8. Source thực thi: k8s/base/. Không tuyên bố cron exactly-once; SKIP LOCKED bảo vệ chạy đồng thời, crash có thể cần retry/idempotence.
+Thông số đã kiểm chứng 2026-10-13: Web 2–10 pods; queue worker 1–8 pods; dispatcher root:8. Source thực thi: repo sibling `odoo-cmc-gitops/base/`. Không tuyên bố cron exactly-once; SKIP LOCKED bảo vệ chạy đồng thời, crash có thể cần retry/idempotence.

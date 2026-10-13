@@ -1,6 +1,6 @@
 # QUY CHUẨN KỸ THUẬT KUBERNETES CHO ODOO
 > **Mã quy tắc**: `RULE-K8S-02`  
-> **Áp dụng cho**: Mọi file YAML trong `k8s/` và cấu hình container.
+> **Áp dụng cho**: Mọi manifest trong repo sibling `odoo-cmc-gitops` và cấu hình container trong repo này.
 
 ---
 

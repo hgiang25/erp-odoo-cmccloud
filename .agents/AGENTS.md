@@ -41,4 +41,8 @@ Mọi tài liệu, quy tắc và kế hoạch phải được lưu trữ tập t
 4. **Cập nhật Plans & Reviews**: Khi có yêu cầu mới hoặc phát hiện lỗi, luôn cập nhật vào `.agents/plans/` hoặc `.agents/reviews/`.
 
 ## Cập nhật thực thi 2026-10-13
-Manifest thực thi nằm trong k8s/base; web dùng một Argo Rollout. Worker tier tách cron, queue dispatcher và HTTP worker nội bộ theo OCA runtime. Xem plan mục 4 và reviews/k8s-plan-completion-review.md.
+Manifest thực thi đã chuyển hoàn toàn sang repo sibling `odoo-cmc-gitops`; repo này chỉ
+giữ source/addons, Dockerfiles và CI image. Web dùng một Argo Rollout; worker tier tách
+cron, queue dispatcher và HTTP worker nội bộ theo OCA runtime. Xem
+`plans/two-repo-gitops-separation-plan.md` và
+`reviews/two-repo-gitops-completion-review.md`.

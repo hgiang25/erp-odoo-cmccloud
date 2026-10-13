@@ -1,6 +1,6 @@
 # KẾ HOẠCH PHÂN TÁCH TWO-REPOSITORY PATTERN (APP REPO & GITOPS REPO)
 > **Mục tiêu**: Tách biệt hoàn toàn mã nguồn ứng dụng Odoo và cấu hình hạ tầng Kubernetes GitOps thành 2 repository riêng biệt theo chuẩn CNCF / ArgoCD Enterprise Standard, tương tự mô hình đã triển khai thành công tại `hgiang25/aws-eks-gitops-platform` và `hgiang25/k8s-gitops`.  
-> **Trạng thái**: Chờ duyệt (Pending Approval)  
+> **Trạng thái**: Đã triển khai source; chờ push và nghiệm thu runtime CMC
 > **Ngày lập**: 2026-10-13
 
 ---
@@ -231,3 +231,15 @@ Workflow build image trên App Repo sẽ học theo đúng cú pháp từ `gitop
 1. Bạn dự định đặt tên repository GitOps mới là gì? (`hgiang25/odoo-cmc-gitops` hay `hgiang25/odoo-gitops`?)
 2. Bạn có muốn giữ lại thư mục `docker-compose.yml` và dev local trong App Repo không? (Khuyến nghị: Có, để dev test nhanh).
 3. Sau khi tôi chuẩn bị xong toàn bộ cấu trúc và script, bạn có sẵn sàng tạo Personal Access Token (`GITOPS_PAT`) với quyền `repo` trên GitHub không?
+
+## 6. Kết quả thực thi 2026-10-13
+
+- Repo app đã bỏ toàn bộ `k8s/`; chỉ còn source/addons, `docker/` và CI.
+- Docker image Odoo copy source thật từ checkout và CI smoke-test đường dẫn import
+  trước khi push. Backup image hỗ trợ CMC S3.
+- Repo `odoo-cmc-gitops` đã có `bootstrap/`, `clusters/cmc/`, `base/`, `overlays/`,
+  `scripts/`, DR và validation độc lập; loại manifest legacy và bytecode khỏi Git.
+- CMC overlay không dựng PostgreSQL StatefulSet/PVC; kết nối DBaaS bằng
+  Service/EndpointSlice. Backup upload S3 với marker `_SUCCESS` ghi cuối.
+- Pipeline app chỉ commit image tag sang GitOps; Argo CD là reconciler workload duy nhất.
+- Chi tiết kiểm chứng và giới hạn runtime: `reviews/two-repo-gitops-completion-review.md`.
