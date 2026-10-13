@@ -50,3 +50,8 @@ package.json
 /man/
 /share/
 /src/
+
+# Central agent hub and local validation artifacts
+!.agents/
+!.agents/**
+k8s/.local/
