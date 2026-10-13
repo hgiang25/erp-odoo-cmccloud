@@ -65,6 +65,9 @@ def main():
     database = os.environ["PGDATABASE"]
     if database != "odoo17_dev":
         raise ValueError("Backup database must be odoo17_dev")
+    rollout = api(f"/apis/argoproj.io/v1alpha1/namespaces/{NS}/rollouts/odoo-web-rollout")
+    if rollout.get("status", {}).get("phase") != "Healthy":
+        raise RuntimeError("Finish or abort the active/unhealthy Rollout before backing up")
     state = {"scales": {path: api(path)["spec"]["replicas"] for path in SCALES},
              "scalers": {path: {key: api(path).get("metadata", {}).get("annotations", {}).get(key)
                                for key in PAUSE_KEYS} for path in SCALERS}}

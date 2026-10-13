@@ -1,8 +1,7 @@
 # Run only after confirming the failed backup Job is no longer running.
 [CmdletBinding()]
-param()
+param([string]$Context = 'docker-desktop')
 $ErrorActionPreference = 'Stop'
-$Context = 'docker-desktop'
 $Lock = & kubectl --context $Context -n odoo-system get configmap odoo-backup-lock -o json
 if ($LASTEXITCODE -ne 0) { throw 'Cannot read backup recovery state.' }
 $State = (($Lock | ConvertFrom-Json).data.'resume.json' | ConvertFrom-Json)

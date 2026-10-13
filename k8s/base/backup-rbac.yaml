@@ -13,6 +13,14 @@ metadata:
   labels: {}
 rules:
 - apiGroups:
+  - argoproj.io
+  resources:
+  - rollouts
+  resourceNames:
+  - odoo-web-rollout
+  verbs:
+  - get
+- apiGroups:
   - apps
   resources:
   - deployments/scale

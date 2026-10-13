@@ -1,5 +1,6 @@
 """Render manifests used by PowerShell without native-shell inline quoting."""
 import argparse
+import hashlib
 from pathlib import Path
 import sys
 import yaml
@@ -15,7 +16,8 @@ if args.action == "storage":
     yaml.safe_dump_all(documents, sys.stdout, sort_keys=False)
 else:
     document = yaml.safe_load(args.template.read_text(encoding="utf-8"))
-    document["metadata"]["name"] = "odoo-restore-drill-" + args.backup_set.lower()
+    suffix = hashlib.sha256(args.database.encode()).hexdigest()[:8]
+    document["metadata"]["name"] = "odoo-restore-drill-" + args.backup_set.lower() + "-" + suffix
     for item in document["spec"]["template"]["spec"]["containers"][0]["env"]:
         if item["name"] == "BACKUP_SET":
             item["value"] = args.backup_set
