@@ -63,7 +63,7 @@ jobs:
           test -n "$(kubectl --context "$KUBE_CONTEXT" -n odoo-system get secret odoo-secrets -o "jsonpath={.data.$key}")"
         done
         kubectl --context "$KUBE_CONTEXT" -n odoo-system get secret odoo-tls >/dev/null
-    - name: Install Argo CD and register the root application
+    - name: Install Argo CD via Helm
       shell: bash
       run: |
         set -euo pipefail
@@ -72,6 +72,22 @@ jobs:
           --version "$ARGOCD_CHART_VERSION" \
           --namespace argocd \
           --wait --timeout 10m
+    - name: Wait for Argo CD controllers to be fully ready
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "Waiting for argocd-server..."
+        kubectl --context "$KUBE_CONTEXT" -n argocd rollout status deployment/argocd-server --timeout=300s
+        echo "Waiting for argocd-repo-server..."
+        kubectl --context "$KUBE_CONTEXT" -n argocd rollout status deployment/argocd-repo-server --timeout=300s
+        echo "Waiting for argocd-application-controller..."
+        kubectl --context "$KUBE_CONTEXT" -n argocd rollout status statefulset/argocd-application-controller --timeout=300s
+        echo "All Argo CD components are ready."
+    - name: Register the AppProject and root Application
+      shell: bash
+      run: |
+        set -euo pipefail
         kubectl --context "$KUBE_CONTEXT" apply -f k8s/gitops/bootstrap/odoo-cmc-project.yaml
         kubectl --context "$KUBE_CONTEXT" apply -f k8s/gitops/bootstrap/odoo-cmc-root.yaml
+        echo "Root application registered. Argo CD will now reconcile all child applications."
         kubectl --context "$KUBE_CONTEXT" -n argocd get applications.argoproj.io
