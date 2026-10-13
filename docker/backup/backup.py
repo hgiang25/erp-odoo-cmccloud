@@ -25,6 +25,7 @@ SCALERS = [f"/apis/keda.sh/v1alpha1/namespaces/{NS}/scaledobjects/{name}"
            for name in ("odoo-web-autoscaler", "odoo-worker-autoscaler")]
 LOCKS = f"/api/v1/namespaces/{NS}/configmaps"
 PAUSE_KEYS = ("autoscaling.keda.sh/paused", "autoscaling.keda.sh/paused-replicas")
+BACKUP_FILES = ("database.dump", "filestore.tar.gz", "metadata.json", "SHA256SUMS")
 
 def api(path, method="GET", value=None):
     data = None if value is None else json.dumps(value).encode()
@@ -44,6 +45,42 @@ def checksum(path):
 
 def stop_signal(signum, frame):
     raise InterruptedError(f"Backup interrupted by signal {signum}")
+
+def s3_client():
+    bucket = os.environ.get("S3_BUCKET", "").strip()
+    required = os.environ.get("S3_REQUIRED", "false").lower() == "true"
+    if not bucket:
+        if required:
+            raise ValueError("S3_BUCKET is required for this environment")
+        return None, None
+    import boto3
+    from botocore.config import Config
+    endpoint = os.environ.get("S3_ENDPOINT_URL", "").strip() or None
+    client = boto3.client(
+        "s3",
+        endpoint_url=endpoint,
+        region_name=os.environ.get("AWS_DEFAULT_REGION", "us-east-1"),
+        config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
+    )
+    return client, bucket
+
+def upload_backup(folder):
+    client, bucket = s3_client()
+    if client is None:
+        return
+    prefix = os.environ.get("S3_PREFIX", "odoo/backups").strip("/")
+    key_prefix = "/".join(part for part in (prefix, folder.name) if part)
+    client.head_bucket(Bucket=bucket)
+    for filename in BACKUP_FILES:
+        client.upload_file(str(folder / filename), bucket, f"{key_prefix}/{filename}")
+    # Consumers only accept a set after this marker is written last.
+    client.put_object(
+        Bucket=bucket,
+        Key=f"{key_prefix}/_SUCCESS",
+        Body=(folder / "SHA256SUMS").read_bytes(),
+        ContentType="text/plain",
+    )
+    print(f"Off-site copy complete: s3://{bucket}/{key_prefix}", flush=True)
 
 def resume(state):
     errors = []
@@ -112,7 +149,9 @@ def main():
                                         "consistent": True, "filestore_present": source.is_dir()}))
         (staging / "SHA256SUMS").write_text("".join(
             f"{checksum(path)}  {path.name}\n" for path in (dump, archive, metadata)))
-        staging.rename(root / stamp)
+        completed = root / stamp
+        staging.rename(completed)
+        upload_backup(completed)
         print(f"Backup complete: {stamp}", flush=True)
         # Delete only completed sets created by this script, after a successful new backup.
         for candidate in root.iterdir():

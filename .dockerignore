@@ -1,0 +1,10 @@
+**
+!odoo/
+!odoo/**
+!addons/
+!addons/**
+!docker/
+!docker/odoo/
+!docker/odoo/**
+**/__pycache__/
+**/*.py[cod]

@@ -5,7 +5,8 @@ import time
 import psycopg2
 
 options = dict(host=os.environ["HOST"], port=os.environ.get("PORT", "5432"),
-               user=os.environ["USER"], password=os.environ["PASSWORD"])
+               user=os.environ["USER"], password=os.environ["PASSWORD"],
+               sslmode=os.environ.get("PGSSLMODE", "prefer"))
 deadline = time.monotonic() + 120
 while True:
     try:

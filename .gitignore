@@ -54,5 +54,6 @@ package.json
 # Central agent hub and local validation artifacts
 !.agents/
 !.agents/**
+!.dockerignore
 k8s/.local/
 odoo-cmc-gitops/

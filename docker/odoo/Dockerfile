@@ -9,6 +9,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends git \
     && git -C /opt/oca/queue checkout --detach FETCH_HEAD \
     && test "$(git -C /opt/oca/queue rev-parse HEAD)" = "$OCA_QUEUE_REF" \
     && rm -rf /opt/oca/queue/.git /var/lib/apt/lists/*
-COPY render_config.py init_db.py /opt/odoo-k8s/
+
+# The release image must contain the code that triggered the pipeline.  Keeping
+# the official image as the runtime base preserves /entrypoint.sh and system
+# dependencies while PYTHONPATH makes the checked-out Odoo source authoritative.
+COPY --chown=odoo:odoo odoo /opt/odoo-src/odoo
+COPY --chown=odoo:odoo addons /opt/odoo-src/addons
+COPY --chown=odoo:odoo docker/odoo/render_config.py docker/odoo/init_db.py /opt/odoo-k8s/
+ENV PYTHONPATH=/opt/odoo-src
 USER odoo
 # Inherit /entrypoint.sh, including wait-for-psql and Secret-derived DB args.
