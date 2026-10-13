@@ -50,3 +50,17 @@ Plan được đối chiếu với toàn bộ manifest và mã nguồn Odoo. A1�
 - Helpers PowerShell đã kiểm tra truyền đủ arguments bằng kubectl giả lập; deploy thực tế từ chối thiếu docker-desktop trước thay đổi cluster và giữ nguyên current-context.
 
 Pending: runtime cluster, canary traffic weights thực tế, KEDA HPA và restore drill Kubernetes; thiếu docker-desktop context.
+
+## Điều chỉnh CD cho CMC Cloud
+
+Repo tham chiếu `hcm3-k8s-lab` build image bằng GitHub Actions rồi dùng runner
+self-hosted chạy `kubectl apply`/`kubectl set image`. Project Odoo giữ cách tag image
+theo commit và runner bastion, nhưng thay deploy trực tiếp bằng GitOps: workflow
+commit image tag vào overlay, Argo CD app-of-apps tự đồng bộ APISIX, Argo Rollouts,
+KEDA, etcd và Odoo. Runner có quyền cluster chỉ dùng cho bootstrap Argo CD thủ công.
+
+## Chuyển môi trường sau kiểm tra local
+
+Cluster local đã được dọn theo yêu cầu người dùng. Phần CMC được refactor riêng,
+kết quả và giới hạn hiện tại xem [CMC readiness review](cmc-cloud-readiness.md).
+Các kiểm chứng Docker/local phía trên không được xem là nghiệm thu runtime CMC.

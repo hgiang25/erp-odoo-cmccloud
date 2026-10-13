@@ -21,7 +21,7 @@ def memory(value):
             return float(str(value)[:-len(suffix)]) * multiplier
     return float(value)
 
-def check(resources, local=False):
+def check(resources, local=False, odoo_image="odoo-queue:17.0-lab"):
     index = {(d["kind"], d["metadata"]["name"]): d for d in resources}
     assert len(index) == len(resources), "Duplicate resource identity"
     assert ("Deployment", "odoo-web") not in index, "Duplicate web owner"
@@ -51,7 +51,7 @@ def check(resources, local=False):
             assert pod["securityContext"][key] == 101
         for container in pod["containers"]:
             assert "command" not in container, "Preserve Odoo entrypoint"
-            assert container["image"] == "odoo-queue:17.0-lab"
+            assert container["image"] == odoo_image
             args = container["args"]
             processes = 0
             if "--no-http" not in args:
@@ -87,6 +87,21 @@ def main():
     sets = [render(ROOT), render(ROOT / "overlays/local"), render(ROOT / "overlays/http-scaling")]
     for docs, local in zip(sets, (False, True, False)):
         check(docs, local)
+    cmc_docs = render(ROOT / "overlays/cmc")
+    check(cmc_docs, odoo_image=(
+        "docker.io/REPLACE_DOCKERHUB_USERNAME/odoo-queue:REPLACE_IMAGE_TAG"))
+    sets.append(cmc_docs)
+    infrastructure = render(ROOT / "overlays/cmc-infrastructure")
+    assert any(d["kind"] == "StatefulSet" and d["metadata"]["name"] == "apisix-etcd"
+               for d in infrastructure)
+    applications = render(ROOT / "gitops/applications")
+    assert {d["metadata"]["name"] for d in applications} == {
+        "odoo-cmc-infrastructure", "odoo-argo-rollouts", "odoo-keda",
+        "odoo-apisix", "odoo-cmc"}
+    assert all(d["spec"]["syncPolicy"]["automated"]["selfHeal"] for d in applications)
+    from cmc import artifacts, load_config
+    cloud = artifacts(load_config(ROOT / 'cmc/config.example.yaml'))
+    sets.extend([cloud['app.yaml'], cloud['infrastructure.yaml']])
     for path in ROOT.rglob("*.py"):
         if ".local" not in path.parts:
             ast.parse(path.read_text(encoding="utf-8"), filename=str(path))

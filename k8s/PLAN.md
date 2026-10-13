@@ -1,4 +1,9 @@
 # KẾ HOẠCH TRIỂN KHAI HOÀN CHỈNH: ODOO DECOMPOSED MONOLITH TRÊN KUBERNETES
+
+> Bản kế hoạch ban đầu, giữ để tham khảo lịch sử. Trạng thái thực thi hiện tại
+> nằm tại [plan trung tâm](../.agents/plans/k8s-decomposed-monolith-plan.md).
+> Khi triển khai CMC dùng [runbook cloud](cmc/README.md); các giá trị pool,
+> replica và đường dẫn cũ dưới đây không phải cấu hình vận hành hiện tại.
 > **Dự án**: Final Lab - Đưa Odoo ERP lên Kubernetes (CMC Cloud Standard)  
 > **Mục tiêu**: Chuẩn hóa toàn bộ cấu trúc hạ tầng từ Local (Docker Desktop) đến Cloud, khắc phục triệt để các lỗi kỹ thuật thực tế, đồng bộ 100% mã nguồn Odoo và chuẩn bị tài liệu/luận điểm bảo vệ xuất sắc trước hội đồng.
 

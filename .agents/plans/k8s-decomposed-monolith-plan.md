@@ -135,3 +135,22 @@ Phần 1–3 lưu yêu cầu gốc. Các điều chỉnh dưới đây thay th�
 Backup nhất quán có khoảng ngừng dịch vụ mỗi ngày lúc 02:00 giờ Việt Nam. Backup PVC riêng không tự đáp ứng DR off-site. Hạ tầng và mọi lệnh mutate mặc định cố định docker-desktop, không đổi current-context.
 
 Bằng chứng và kết quả kiểm tra: [review hoàn thành](../reviews/k8s-plan-completion-review.md).
+
+## 5. Chuyển sang CMC Cloud (2026-10-13)
+
+- [x] CLI cloud chỉ render/preflight; loại đường deploy workload trực tiếp để Argo CD là reconciler duy nhất.
+- [x] Image Docker Hub cho mọi tier và init/backup/restore; hỗ trợ imagePullSecrets.
+- [x] StorageClass block/RWX rõ ràng, gateway ELB HTTPS + TLS và NetworkPolicy.
+- [x] Kiểm tra schema/Helm, tests offline, hướng dẫn và review CMC.
+- [x] GitOps app-of-apps: Argo CD quản lý APISIX, Argo Rollouts, KEDA, etcd và overlay Odoo.
+- [x] CI build/push image tag `sha-*`, commit promotion vào Kustomize; bootstrap Argo CD chạy thủ công trên self-hosted runner bastion.
+- [ ] Người dùng dựng NFS/RWX, cung cấp kubeconfig, domain/TLS, Docker Hub username.
+- [ ] Xác nhận lifecycle/bản vá Kubernetes CMC; 1.32 không còn được upstream hỗ trợ.
+- [ ] Build/push release image; live preflight và smoke test cloud.
+- [ ] Nghiệm thu canary/KEDA, RWX nhiều node và backup/restore trên CMC.
+- [ ] HA database/etcd/NFS, off-site backup, monitoring trước production.
+
+Local Kubernetes đã được người dùng yêu cầu dọn sạch trước lượt refactor.
+Self-hosted runner chỉ bootstrap Argo CD; phát hành hằng ngày không `kubectl apply`
+workload mà cập nhật Git để Argo CD reconcile. Hướng dẫn cloud tại `k8s/cmc/README.md`; bằng chứng tại
+[CMC readiness review](../reviews/cmc-cloud-readiness.md).

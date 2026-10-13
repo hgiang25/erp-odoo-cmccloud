@@ -1,0 +1,41 @@
+name: Validate Kubernetes and GitOps
+
+on:
+  pull_request:
+    paths:
+    - 'k8s/**'
+    - '.github/workflows/**'
+  push:
+    branches: [main]
+    paths:
+    - 'k8s/**'
+    - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: azure/setup-kubectl@v4
+      with:
+        version: v1.32.7
+    - uses: azure/setup-helm@v4
+      with:
+        version: v3.17.3
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: pip
+        cache-dependency-path: k8s/requirements-tools.txt
+    - name: Install validation dependencies
+      run: python -m pip install -r k8s/requirements-tools.txt
+    - name: Validate manifests and scripts
+      run: python k8s/validate.py
+    - name: Run cloud boundary tests
+      run: python -m unittest discover -s k8s/tests -v
+    - name: Validate pinned Helm charts and custom resources
+      run: python k8s/tests/validate_cloud_charts.py

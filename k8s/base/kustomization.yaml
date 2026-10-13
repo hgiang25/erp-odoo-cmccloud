@@ -14,3 +14,4 @@ resources:
 - 10-argo-rollout.yaml
 - backup-rbac.yaml
 - 11-backup-cronjob.yaml
+- 12-init-db.yaml

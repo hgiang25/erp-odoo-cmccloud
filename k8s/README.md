@@ -1,5 +1,10 @@
 # Odoo 17 trên Kubernetes — Decomposed Monolith
 
+**Triển khai CMC Cloud:** xem [hướng dẫn Argo CD trên CMC](cmc/README.md).
+`deploy.ps1` chỉ dành cho local Docker Desktop. Trên CMC, GitHub Actions build
+image và cập nhật Git; Argo CD là thành phần đồng bộ workload vào cluster.
+Vẫn cần NFS RWX, domain/TLS và kubeconfig thực tế trước khi bootstrap.
+
 Web, cron và hàng đợi dùng chung PostgreSQL để giữ giao dịch ACID. Sessions và filestore dùng chung PVC; Odoo vanilla đồng bộ bus qua PostgreSQL `pg_notify`.
 
 ```mermaid
@@ -65,9 +70,11 @@ Sau đó mở **http://odoo.local:30080**. Port-forward đi qua APISIX và hỗ 
 curl.exe -H "Host: odoo.local" http://127.0.0.1:30080/web/health
 ```
 
-Kết quả mong đợi là `{"status": "pass"}`. Đăng nhập bằng `admin`; lấy password đã sinh:
+Kết quả mong đợi là `{"status": "pass"}`.
 
 Overlay local đặt `X-Forwarded-Host` thành `odoo.local:30080` để các redirect do Odoo sinh ra giữ đúng port. Không mở `http://odoo.local` thiếu port vì cổng 80 có thể thuộc về một dịch vụ Windows khác.
+
+Đăng nhập bằng `admin`; lấy password khởi tạo (sau khi đổi trong UI, Secret không tự cập nhật):
 
 ```powershell
 $Encoded = kubectl --context docker-desktop -n odoo-system get secret odoo-secrets -o 'jsonpath={.data.ADMIN_LOGIN_PASSWORD}'
