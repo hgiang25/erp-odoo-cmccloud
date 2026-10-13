@@ -67,6 +67,8 @@ curl.exe -H "Host: odoo.local" http://127.0.0.1:30080/web/health
 
 Kết quả mong đợi là `{"status": "pass"}`. Đăng nhập bằng `admin`; lấy password đã sinh:
 
+Overlay local đặt `X-Forwarded-Host` thành `odoo.local:30080` để các redirect do Odoo sinh ra giữ đúng port. Không mở `http://odoo.local` thiếu port vì cổng 80 có thể thuộc về một dịch vụ Windows khác.
+
 ```powershell
 $Encoded = kubectl --context docker-desktop -n odoo-system get secret odoo-secrets -o 'jsonpath={.data.ADMIN_LOGIN_PASSWORD}'
 [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($Encoded))
