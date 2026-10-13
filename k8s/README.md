@@ -53,7 +53,19 @@ Script luôn truyền context rõ ràng, không đổi current-context. Nếu kh
 
 Helm ghim APISIX chart 2.10.0 (ingress-controller 0.14.0), Argo 2.43.6, KEDA 2.18.0, metrics-server 3.12.2. APISIX dùng etcd riêng để tránh dependency image Bitnami cũ. `--kubelet-insecure-tls` chỉ dành cho metrics-server local. Các phiên bản này phục vụ bộ lab tương thích; cần đánh giá/nâng phiên bản và TLS trước khi đưa lên cloud.
 
-Thêm `127.0.0.1 odoo.local` vào file hosts rồi mở **http://odoo.local:30080**. APISIX NodePort hỗ trợ cả WebSocket. Đăng nhập bằng `admin`; lấy password đã sinh:
+Thêm `127.0.0.1 odoo.local` vào file hosts. Docker Desktop dùng cluster nhiều node có thể không publish NodePort trực tiếp ra Windows, vì vậy mở một terminal riêng và giữ terminal này chạy:
+
+```powershell
+.\k8s\port-forward.ps1
+```
+
+Sau đó mở **http://odoo.local:30080**. Port-forward đi qua APISIX và hỗ trợ cả HTTP lẫn WebSocket. Có thể kiểm tra trước bằng:
+
+```powershell
+curl.exe -H "Host: odoo.local" http://127.0.0.1:30080/web/health
+```
+
+Kết quả mong đợi là `{"status": "pass"}`. Đăng nhập bằng `admin`; lấy password đã sinh:
 
 ```powershell
 $Encoded = kubectl --context docker-desktop -n odoo-system get secret odoo-secrets -o 'jsonpath={.data.ADMIN_LOGIN_PASSWORD}'
