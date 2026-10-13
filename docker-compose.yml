@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: odoo_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=odoo
+      - POSTGRES_PASSWORD=odoo
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - odoo_db_data:/var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odoo -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  odoo:
+    image: odoo:17.0
+    container_name: odoo_app
+    restart: unless-stopped
+    user: root
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8069:8069"
+    volumes:
+      # Mount toàn bộ mã nguồn Odoo local vào /workspace
+      - ./:/workspace:rw
+      # File cấu hình Odoo
+      - ./config/odoo.conf:/etc/odoo/odoo.conf:ro
+      # Volume lưu trữ filestore và sessions
+      - odoo_web_data:/var/lib/odoo
+    environment:
+      - HOST=db
+      - USER=odoo
+      - PASSWORD=odoo
+    # Chạy trực tiếp entrypoint odoo-bin của project kèm chế độ live reload view XML/QWeb
+    command: >
+      python3 /workspace/odoo-bin
+      -c /etc/odoo/odoo.conf
+      --dev=xml,qweb
+
+volumes:
+  odoo_db_data:
+    name: odoo_17_db_data
+  odoo_web_data:
+    name: odoo_17_web_data
