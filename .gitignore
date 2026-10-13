@@ -55,3 +55,4 @@ package.json
 !.agents/
 !.agents/**
 k8s/.local/
+odoo-cmc-gitops/
