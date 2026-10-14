@@ -243,3 +243,12 @@ Workflow build image trên App Repo sẽ học theo đúng cú pháp từ `gitop
   Service/EndpointSlice. Backup upload S3 với marker `_SUCCESS` ghi cuối.
 - Pipeline app chỉ commit image tag sang GitOps; Argo CD là reconciler workload duy nhất.
 - Chi tiết kiểm chứng và giới hạn runtime: `reviews/two-repo-gitops-completion-review.md`.
+
+## 7. Cập nhật hoàn thiện runtime 2026-10-14
+
+- Loại DBaaS IP khỏi Git/EndpointSlice; bootstrap tạo và rotate `odoo-db-connection` từ
+  GitHub Variables/Secrets, đồng thời kiểm tra PostgreSQL 16 từ trong cluster.
+- Thêm workflow cấu hình desired state từ GitHub Variables, private registry pull Secret,
+  canary health analysis và workflow xác minh Argo/rollout/public health.
+- Sửa Kustomize delete patches để tương thích kubectl v1.32.7/Kustomize v5.5.0.
+- Backup, restore, S3 retention và production DR được tách khỏi phạm vi lượt này.

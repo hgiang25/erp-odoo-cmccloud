@@ -37,4 +37,18 @@ backup chỉ nằm trên PVC.
 - Chưa có giá trị thật cho DBaaS IP, NFS StorageClass, S3, domain/TLS, ELB flavor.
 - Chưa chạy bootstrap, image pull, DB init, canary/KEDA, WebSocket, RWX cross-node.
 - Chưa chạy backup lên S3 và restore drill với DBaaS thật.
-- APISIX etcd vẫn single replica; chưa production-ready nếu chưa bổ sung HA/monitoring.
+- APISIX etcd đã chuyển thành ba member với PDB; chưa production-ready nếu chưa nghiệm
+  thu mất node/volume và bổ sung monitoring/alerting.
+
+## Rà soát bổ sung 2026-10-14
+
+- DB runtime đã chuyển sang Secret `odoo-db-connection`; thay GitHub DB Variable/Secret và
+  chạy lại bootstrap sẽ rotate endpoint/credential mà không sửa manifest.
+- DBaaS preflight xác nhận PostgreSQL 16, TLS và credential từ pod trong cluster.
+- Overlay thật đã có `odoo-registry`; canary dùng AnalysisTemplate gọi health endpoint có
+  kiểm tra database trước khi tăng traffic.
+- Workflow `configure-cmc.yml` thay placeholder hạ tầng không nhạy cảm; workflow
+  `verify-cmc.yml` đợi Argo Synced/Healthy, Rollout Healthy, image tag và public health.
+- Offline validation chạy được với kubectl v1.32.7/Kustomize v5.5.0 ghim trong CI.
+- APISIX external etcd chạy ba member, anti-affinity và PDB `minAvailable: 2`.
+- Phần backup/restore/DR không thuộc phạm vi hoàn thiện này và vẫn chưa được nghiệm thu.
