@@ -4,6 +4,7 @@ import subprocess
 import time
 import psycopg2
 
+DATABASE = os.environ.get("ODOO_DB_NAME", "odoo17_dev")
 options = dict(host=os.environ["HOST"], port=os.environ.get("PORT", "5432"),
                user=os.environ["USER"], password=os.environ["PASSWORD"],
                sslmode=os.environ.get("PGSSLMODE", "prefer"))
@@ -18,13 +19,13 @@ while True:
         time.sleep(2)
 with connection:
     with connection.cursor() as cursor:
-        cursor.execute("SELECT 1 FROM pg_database WHERE datname=%s", ("odoo17_dev",))
+        cursor.execute("SELECT 1 FROM pg_database WHERE datname=%s", (DATABASE,))
         exists = bool(cursor.fetchone())
 connection.close()
 fresh = not exists
 missing = ["base", "web", "queue_job"]
 if exists:
-    with psycopg2.connect(dbname="odoo17_dev", **options) as connection:
+    with psycopg2.connect(dbname=DATABASE, **options) as connection:
         with connection.cursor() as cursor:
             cursor.execute("SELECT to_regclass('public.ir_module_module')")
             if cursor.fetchone()[0]:
@@ -35,7 +36,7 @@ if exists:
                 fresh = True
 if missing:
     subprocess.run(["/entrypoint.sh", "odoo", "-c", "/etc/odoo/odoo.conf",
-                    "-d", "odoo17_dev", "-i", ",".join(missing),
+                    "-d", DATABASE, "-i", ",".join(missing),
                     "--without-demo=all", "--stop-after-init", "--no-http",
                     "--workers=0", "--max-cron-threads=0",
                     "--load=base,web,queue_job"], check=True)
@@ -45,6 +46,6 @@ else:
 if fresh:
     # Set the login password through the ORM only for a newly initialized database.
     subprocess.run(["/entrypoint.sh", "odoo", "shell", "-c", "/etc/odoo/odoo.conf",
-                    "-d", "odoo17_dev", "--no-http", "--workers=0", "--max-cron-threads=0"],
+                    "-d", DATABASE, "--no-http", "--workers=0", "--max-cron-threads=0"],
                    input='import os\nenv.ref("base.user_admin").write({"password": os.environ["ADMIN_LOGIN_PASSWORD"]})\nenv.cr.commit()\n',
                    text=True, check=True)
