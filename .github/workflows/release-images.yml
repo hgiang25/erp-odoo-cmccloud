@@ -47,10 +47,20 @@ jobs:
   publish:
     name: Build, smoke-test and publish immutable images
     needs: quality
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
     - uses: actions/checkout@v4
+    - name: Refuse stale manual reruns before publishing
+      if: github.event_name != 'pull_request'
+      run: |
+        set -euo pipefail
+        latest="$(git ls-remote origin refs/heads/main | cut -f1)"
+        if [ "$latest" != "$GITHUB_SHA" ]; then
+          echo 'This source commit is no longer main. Start a new workflow run on main.' >&2
+          exit 1
+        fi
     - uses: docker/setup-buildx-action@v3
     - uses: docker/login-action@v3
       if: github.event_name != 'pull_request'
@@ -93,13 +103,31 @@ jobs:
         ODOO_IMAGE: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/odoo-queue:${{ env.IMAGE_TAG }}
         BACKUP_IMAGE: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/odoo-backup:${{ env.IMAGE_TAG }}
       run: |
-        docker tag "local/odoo-queue:$IMAGE_TAG" "$ODOO_IMAGE"
-        docker tag "local/odoo-backup:$IMAGE_TAG" "$BACKUP_IMAGE"
-        docker push "$ODOO_IMAGE"
-        docker push "$BACKUP_IMAGE"
+        set -euo pipefail
+        publish_once() {
+          local local_image="$1" remote_image="$2"
+          local error_file
+          error_file="$(mktemp)"
+          if docker manifest inspect "$remote_image" > /dev/null 2> "$error_file"; then
+            echo "Reusing existing immutable tag: $remote_image"
+          elif grep -Eiq 'manifest unknown|no such manifest' "$error_file"; then
+            docker tag "$local_image" "$remote_image"
+            docker push "$remote_image"
+          else
+            cat "$error_file" >&2
+            rm -f "$error_file"
+            return 1
+          fi
+          rm -f "$error_file"
+          docker pull "$remote_image"
+        }
+        publish_once "local/odoo-queue:$IMAGE_TAG" "$ODOO_IMAGE"
+        publish_once "local/odoo-backup:$IMAGE_TAG" "$BACKUP_IMAGE"
+        docker run --rm --entrypoint python3 "$ODOO_IMAGE" -c "import pathlib, odoo; assert str(pathlib.Path(odoo.__file__).resolve()).startswith('/opt/odoo-src/')"
+        docker run --rm --entrypoint python3 "$BACKUP_IMAGE" -c 'import boto3'
 
   promote:
-    name: Commit desired versions to GitOps
+    name: Commit desired Dev versions to GitOps
     needs: publish
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
@@ -111,6 +139,8 @@ jobs:
         repository: hgiang25/odoo-cmc-gitops
         token: ${{ secrets.GITOPS_PAT }}
         path: gitops-repo
+        ref: main
+        fetch-depth: 0
     - uses: actions/setup-python@v5
       with:
         python-version: '3.12'
@@ -123,26 +153,31 @@ jobs:
     - name: Update and validate desired state
       env:
         DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        SOURCE_REPO: https://github.com/${{ github.repository }}.git
       run: |
+        set -euo pipefail
+        latest="$(git ls-remote "$SOURCE_REPO" refs/heads/main | cut -f1)"
+        test "$latest" = "$GITHUB_SHA" || { echo 'Source main advanced; refusing stale Dev promotion.' >&2; exit 1; }
         python -m pip install -r gitops-repo/requirements-tools.txt
-        python gitops-repo/scripts/update_images.py --username "$DOCKERHUB_USERNAME" --tag "$IMAGE_TAG" --file gitops-repo/overlays/cmc/kustomization.yaml
+        python gitops-repo/scripts/update_images.py --username "$DOCKERHUB_USERNAME" --tag "$IMAGE_TAG" --file gitops-repo/overlays/dev/kustomization.yaml
         python gitops-repo/validate.py
-        kubectl kustomize gitops-repo/overlays/cmc >/dev/null
+        kubectl kustomize gitops-repo/overlays/dev >/dev/null
 
     - name: Commit and push the promotion
       working-directory: gitops-repo
       run: |
-        if git diff --quiet -- overlays/cmc/kustomization.yaml; then
+        set -euo pipefail
+        if git diff --quiet -- overlays/dev/kustomization.yaml; then
           echo "Desired images already use $IMAGE_TAG"
           exit 0
         fi
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git add overlays/cmc/kustomization.yaml
-        git commit -m "chore(gitops): promote Odoo images to $IMAGE_TAG from erp-odoo-cmccloud@${{ github.sha }}"
-        git push origin HEAD:main
-    - name: Request live CMC verification after promotion
-      if: vars.CMC_AUTO_VERIFY == 'true'
+        git add overlays/dev/kustomization.yaml
+        git commit -m "chore(gitops): promote Dev Odoo images to $IMAGE_TAG from erp-odoo-cmccloud@${{ github.sha }}"
+        python scripts/push_gitops.py
+    - name: Request controlled Dev deployment after promotion
+      if: vars.CMC_AUTO_DEPLOY_DEV == 'true'
       env:
         GH_TOKEN: ${{ secrets.GITOPS_PAT }}
       run: |
@@ -152,4 +187,4 @@ jobs:
           --header 'Accept: application/vnd.github+json' \
           --header 'X-GitHub-Api-Version: 2022-11-28' \
           https://api.github.com/repos/hgiang25/odoo-cmc-gitops/dispatches \
-          --data "{\"event_type\":\"verify-release\",\"client_payload\":{\"image_tag\":\"$IMAGE_TAG\"}}"
+          --data "{\"event_type\":\"deploy-dev-release\",\"client_payload\":{\"environment\":\"dev\",\"image_tag\":\"$IMAGE_TAG\"}}"
