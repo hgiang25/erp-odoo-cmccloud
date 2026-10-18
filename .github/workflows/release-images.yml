@@ -139,7 +139,7 @@ jobs:
         repository: hgiang25/odoo-cmc-gitops
         token: ${{ secrets.GITOPS_PAT }}
         path: gitops-repo
-        ref: main
+        ref: dev
         fetch-depth: 0
     - uses: actions/setup-python@v5
       with:
@@ -175,7 +175,7 @@ jobs:
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git add overlays/dev/kustomization.yaml
         git commit -m "chore(gitops): promote Dev Odoo images to $IMAGE_TAG from erp-odoo-cmccloud@${{ github.sha }}"
-        python scripts/push_gitops.py
+        python scripts/push_gitops.py --branch dev
     - name: Request controlled Dev deployment after promotion
       if: vars.CMC_AUTO_DEPLOY_DEV == 'true'
       env:
