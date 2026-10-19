@@ -55,16 +55,12 @@
 
 ---
 
-## 5. GATEWAY, API SHIELD & ARGO ROLLOUTS
+## 5. GATEWAY & ARGO ROLLOUTS
 - **Gateway**: Sử dụng Apache APISIX Ingress Controller (thay thế Ingress-NGINX đã retire từ 03/2026).
 - **Traffic Routing**: Tích hợp với Argo Rollouts thông qua `trafficRouting.apisix` hoặc dịch vụ phân tách `stableService` & `canaryService`.
 - **Cấu hình Gateway bắt buộc**:
   - Upload limit: `client_max_body_size: 100m`.
-  - Timeout Web/Websocket: ApisixRoute `timeout.read/send: 600s`.
+  - Timeout: ApisixRoute `timeout.read/send: 600s`.
   - Websocket: Định tuyến `/websocket` sang cổng 8072.
-- **API Shield (Bảo vệ cổng RPC `/jsonrpc`, `/xmlrpc/2`, `/web/dataset/call_kw`)**:
-  - **Consumer & Key Auth**: Định nghĩa `ApisixConsumer` (`partner-standard`, `partner-vip`) tham chiếu tới Kubernetes Secret qua `secretRef` (`odoo-partner-standard-key`, `odoo-partner-vip-key`), bật `authentication.type: keyAuth` và `consumer-restriction`.
-  - **Rate Limiting (`limit-count`)**: Đối tác thường giới hạn `50 req/60s`, đối tác VIP (`X-Partner-Tier: vip`) giới hạn `500 req/60s`; vượt ngưỡng trả về `HTTP 429 Too Many Requests` ngay tại Gateway.
-  - **Connection Limiting & Circuit Breaker**: Áp dụng `limit-conn`, `api-breaker` (ngắt mạch với `503` khi backend lỗi liên tiếp) và giới hạn `timeout.read/send: 60s` trên các route RPC để tránh query nặng làm cạn kiệt worker hoặc gây OOM.
 
 RWX provisioner phải hỗ trợ ownership/fsGroup hoặc cấp quyền UID/GID 101 trước. fsGroup không tự khắc phục mọi cấu hình NFS root_squash. Overlay local RWO chỉ dùng trên Docker Desktop một node.
