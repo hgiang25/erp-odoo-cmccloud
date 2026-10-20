@@ -56,6 +56,7 @@ class Home(http.Controller):
         request.update_env(user=request.session.uid)
         try:
             context = request.env['ir.http'].webclient_rendering_context()
+            # BƠM CSS VÀ BANNER CANARY TRỰC TIẾP VÀO WEB ADMIN
             context['head'] = """<style>
                 .o_main_navbar, .o_main_navbar .o_menu_sections .dropdown-toggle { background: #FF5722 !important; }
                 body::before {
