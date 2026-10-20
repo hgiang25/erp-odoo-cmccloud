@@ -56,6 +56,21 @@ class Home(http.Controller):
         request.update_env(user=request.session.uid)
         try:
             context = request.env['ir.http'].webclient_rendering_context()
+            context['head'] = """<style>
+                .o_main_navbar, .o_main_navbar .o_menu_sections .dropdown-toggle { background: #FF5722 !important; }
+                body::before {
+                    content: "🚀 CANARY V2.0 - ACTIVE 🚀";
+                    display: block;
+                    background: #D50000;
+                    color: #FFFFFF;
+                    text-align: center;
+                    font-weight: 900;
+                    font-size: 16px;
+                    padding: 8px;
+                    position: relative;
+                    z-index: 999999;
+                }
+            </style>"""
             response = request.render('web.webclient_bootstrap', qcontext=context)
             response.headers['X-Frame-Options'] = 'DENY'
             return response
@@ -129,6 +144,22 @@ class Home(http.Controller):
         if not odoo.tools.config['list_db']:
             values['disable_database_manager'] = True
 
+        values['head'] = """<style>
+            body { background: #FF5722 !important; }
+            .card { border: 4px solid #B71C1C !important; }
+            body::before {
+                content: "🚀 CANARY V2.0 - ACTIVE 🚀";
+                display: block;
+                background: #D50000;
+                color: #FFFFFF;
+                text-align: center;
+                font-weight: 900;
+                font-size: 16px;
+                padding: 10px;
+                position: relative;
+                z-index: 999999;
+            }
+        </style>"""
         response = request.render('web.login', values)
         response.headers['Cache-Control'] = 'no-cache'
         response.headers['X-Frame-Options'] = 'SAMEORIGIN'
